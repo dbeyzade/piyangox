@@ -1,0 +1,120 @@
+import '../models/campaign.dart';
+import '../models/ticket.dart';
+import 'simple_campaign_service.dart';
+
+class CampaignService {
+  static final CampaignService _instance = CampaignService._internal();
+  factory CampaignService() => _instance;
+  CampaignService._internal();
+
+  final SimpleCampaignService _campaignService = SimpleCampaignService();
+
+  List<Campaign> get campaigns => _campaignService.campaigns;
+  List<Campaign> get activeCampaigns => _campaignService.activeCampaigns;
+  List<Campaign> get completedCampaigns => _campaignService.completedCampaigns;
+  bool get isListPublished => _campaignService.isListPublished;
+
+  // Kampanya oluştur
+  Future<String> createCampaign(Campaign campaign, {bool skipTicketGeneration = false}) async {
+    return await _campaignService.createCampaign(campaign, skipTicketGeneration: skipTicketGeneration);
+  }
+
+  // Admin için özel kampanya oluşturma (bilet oluşturmadan)
+  Future<String> createAdminCampaign(Campaign campaign) async {
+    return await _campaignService.createAdminCampaign(campaign);
+  }
+
+  // Kampanya güncelle
+  Future<bool> updateCampaign(Campaign campaign) async {
+    return await _campaignService.updateCampaign(campaign);
+  }
+
+  // Kampanya sil
+  Future<bool> deleteCampaign(String campaignId) async {
+    return await _campaignService.deleteCampaign(campaignId);
+  }
+
+  // Kampanya bul
+  Campaign? getCampaign(String id) {
+    return _campaignService.getCampaign(id);
+  }
+
+  // Kampanya biletlerini getir
+  List<Ticket> getCampaignTickets(String campaignId) {
+    return _campaignService.getCampaignTickets(campaignId);
+  }
+
+  // Müsait biletleri getir
+  List<Ticket> getAvailableTickets(String campaignId) {
+    return _campaignService.getAvailableTickets(campaignId);
+  }
+
+  // Satılan biletleri getir
+  List<Ticket> getSoldTickets(String campaignId) {
+    return _campaignService.getSoldTickets(campaignId);
+  }
+
+  // Bilet istatistikleri
+  Map<String, int> getTicketStats(String campaignId) {
+    return _campaignService.getTicketStats(campaignId);
+  }
+
+  // Çekiliş yap
+  Future<Map<String, dynamic>> conductDraw(String campaignId, String winningNumber) async {
+    return await _campaignService.conductDraw(campaignId, winningNumber);
+  }
+
+  // Hafta numarası hesapla
+  int getCurrentWeekNumber() {
+    return _campaignService.getCurrentWeekNumber();
+  }
+
+  // Sonraki çekiliş tarihini hesapla (9, 19, 29)
+  DateTime getNextDrawDate() {
+    return _campaignService.getNextDrawDate();
+  }
+
+  // Örnek kazanan numara üret
+  String generateSampleWinningNumber([int length = 10]) {
+    return _campaignService.generateSampleWinningNumber(length);
+  }
+
+  // Liste yayınla
+  Future<void> publishList() async {
+    await _campaignService.publishList();
+  }
+
+  // Listeyi gizle
+  Future<void> unpublishList() async {
+    await _campaignService.unpublishList();
+  }
+
+  // Yayınlanan biletleri getir (üyeler için)
+  List<Ticket> getPublishedTickets() {
+    return _campaignService.getPublishedTickets();
+  }
+
+  // Bilet güncelle  
+  Future<bool> updateTicket(Ticket updatedTicket) async {
+    return await _campaignService.updateTicket(updatedTicket);
+  }
+
+  // Admin'den gelen biletleri sisteme ekle
+  void addTicketToSystem(Ticket ticket) {
+    _campaignService.addTicketToSystem(ticket);
+  }
+
+  // Tüm sistem biletlerini getir (bayiler için)
+  List<Ticket> getAllSystemTickets() {
+    return _campaignService.getAllSystemTickets();
+  }
+
+  // Tüm sistem biletlerini temizle
+  void clearAllSystemTickets() {
+    _campaignService.clearAllSystemTickets();
+  }
+
+  void clearAllCampaigns() {
+    _campaignService.clearAllCampaigns();
+  }
+}

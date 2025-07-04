@@ -1,0 +1,82 @@
+name: piyangox
+description: "Gerçek zamanlı piyango bilet yönetim sistemi"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # 🔥 SUPABASE REALTIME - Temel gereksinimler
+  supabase_flutter: ^2.9.1
+  
+  # 🔥 GERÇEKZAMANLı VERİ - PostgreSQL realtime
+  realtime_client: ^2.5.1
+  
+  # 🔥 HTTP İSTEKLER - API çağrıları için
+  http: ^1.1.0
+  
+  # 🔥 JSON İŞLEME - Model serileştirme
+  json_annotation: ^4.8.1
+  
+  # 🔥 LOKAL STORAGE - Offline veri saklama
+  shared_preferences: ^2.2.3
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # 🔥 DOSYA İŞLEMLERİ - Profil resmi vs.
+  file_picker: ^8.1.2
+  image_picker: ^1.1.2
+  
+  # 🔥 UI KOMPONENTLERİ - Material Design
+  cupertino_icons: ^1.0.6
+  
+  # 🔥 DURUM YÖNETİMİ - State management
+  provider: ^6.1.2
+  
+  # 🔥 ASYNC İŞLEMLER - Stream ve Future kontrolü
+  rxdart: ^0.27.7
+  
+  # 🔥 DİĞER YARDIMCI KÜTÜPHANELER
+  intl: ^0.20.2  # Tarih formatı
+  crypto: ^3.0.3  # Şifreleme
+  uuid: ^4.1.0   # Unique ID üretimi
+  
+  # 🔥 MEVCUT BAĞIMLILIKLAR - Korundu
+  contacts_service: ^0.6.3
+  permission_handler: ^11.3.1
+  confetti: ^0.7.0
+  flutter_colorpicker: ^1.1.0
+  html: ^0.15.4
+  path_provider: ^2.1.5
+  percent_indicator: ^4.2.5
+  window_manager: ^0.3.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # 🔥 KOD ÜRETİMİ - JSON serialization
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+  
+  # 🔥 HIVE CODE GENERATION
+  hive_generator: ^2.0.1
+  
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # 🔥 ASSETS - Görsel dosyalar
+  assets:
+    - assets/images/
+    - assets/icons/
+    
+  # 🔥 FONTS - Özel fontlar (opsiyonel - şimdilik system font kullanılıyor)

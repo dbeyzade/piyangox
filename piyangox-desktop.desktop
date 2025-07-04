@@ -1,0 +1,29 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PiyangoX Desktop
+Comment=Milli Piyango Yönetim Sistemi - Masaüstü Versiyonu
+Icon=/home/ghost/Belgeler/piyango-projesi/assets/icons/piyangox_icon.png
+Exec=/home/ghost/Belgeler/piyango-projesi/run-desktop.sh
+Terminal=false
+Categories=Office;Finance;Utility;
+Keywords=piyango;lottery;bilet;desktop;yönetim;
+StartupNotify=true
+StartupWMClass=piyangox
+MimeType=application/x-piyangox;
+Actions=admin;bayi;settings;
+
+[Desktop Action admin]
+Name=Admin Panel
+Exec=/home/ghost/Belgeler/piyango-projesi/run-desktop.sh --admin
+Icon=/home/ghost/Belgeler/piyango-projesi/assets/icons/piyangox_icon.png
+
+[Desktop Action bayi]
+Name=Bayi Panel  
+Exec=/home/ghost/Belgeler/piyango-projesi/run-desktop.sh --bayi
+Icon=/home/ghost/Belgeler/piyango-projesi/assets/icons/piyangox_icon.png
+
+[Desktop Action settings]
+Name=Ayarlar
+Exec=/home/ghost/Belgeler/piyango-projesi/run-desktop.sh --settings
+Icon=/home/ghost/Belgeler/piyango-projesi/assets/icons/piyangox_icon.png

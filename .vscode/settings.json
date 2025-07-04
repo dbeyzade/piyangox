@@ -1,0 +1,7 @@
+{
+    "task.saveBeforeRun": "prompt",
+    "notebook.consolidatedRunButton": true,
+    "gradle.allowParallelRun": true,
+    "npm.enableRunFromFolder": true,
+    "dart.flutterGenerateLocalizationsOnSave": "all"
+}
