@@ -47,3 +47,7 @@ app.*.map.json
 # Yedek dosyalar
 *.backup
 *.broken
+
+# Supabase
+.supabase/
+!.supabase/migrations/
