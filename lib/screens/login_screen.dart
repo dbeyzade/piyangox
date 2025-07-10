@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import 'admin_dashboard.dart';
+import 'dashboard/admin_dashboard.dart';
+import 'dashboard/user_dashboard.dart';
 import 'member_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -168,10 +169,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 32),
-
-          // Kullanıcı adı
+          // Kullanıcı Adı (zorunlu)
           TextFormField(
             controller: _usernameController,
             decoration: InputDecoration(
@@ -188,15 +187,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Kullanıcı adı gerekli';
+                return 'Kullanıcı Adı gerekli';
               }
               return null;
             },
           ),
-
           const SizedBox(height: 16),
-
-          // Şifre
+          // Şifre (zorunlu)
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
@@ -230,12 +227,9 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-
           const SizedBox(height: 32),
-
-          // Giriş butonu
           ElevatedButton(
-            onPressed: _isLoading ? null : _login,
+            onPressed: _isLoading ? null : _loginWithUsername,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6A1B9A),
               foregroundColor: Colors.white,
@@ -262,146 +256,220 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
           ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _loginWithTestUser,
+            icon: const Icon(Icons.bug_report, color: Colors.white),
+            label: const Text('Test Kullanıcısı ile Giriş',
+                style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepOrange,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentMode = 'register';
+                  });
+                },
+                child: const Text('Hesap Oluştur'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentMode = 'forgot';
+                  });
+                },
+                child: const Text('Şifremi Unuttum'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.admin_panel_settings, color: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: _isLoading ? null : _loginAsAdmin,
+                  label: Text('Admin ile Giriş'),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.person, color: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: _isLoading ? null : _loginAsUye,
+                  label: Text('Üye ile Giriş'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildRegisterForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          '📝 Yeni Üye Ol',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        const SizedBox(height: 32),
-
-        // Ad Soyad
-        TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: 'Ad Soyad',
-            prefixIcon:
-                const Icon(Icons.person_outline, color: Color(0xFF6A1B9A)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '📝 Yeni Üye Ol',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
+            textAlign: TextAlign.center,
           ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Kullanıcı adı
-        TextFormField(
-          controller: _usernameController,
-          decoration: InputDecoration(
-            labelText: 'Kullanıcı Adı',
-            prefixIcon:
-                const Icon(Icons.account_circle, color: Color(0xFF6A1B9A)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Şifre
-        TextFormField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            labelText: 'Şifre',
-            prefixIcon:
-                const Icon(Icons.lock_outline, color: Color(0xFF6A1B9A)),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                color: const Color(0xFF6A1B9A),
+          const SizedBox(height: 32),
+          // Email (zorunlu)
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              labelText: 'Email *',
+              prefixIcon: const Icon(Icons.email, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            helperText: 'En az 6 karakter olmalı',
+            keyboardType: TextInputType.emailAddress,
+            validator: (s) {
+              if (s == null || !s.contains('@'))
+                return 'Geçerli bir email girin';
+              return null;
+            },
           ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Şifre Tekrarı
-        TextFormField(
-          controller: _confirmPasswordController,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            labelText: 'Şifre Tekrarı',
-            prefixIcon: const Icon(Icons.lock, color: Color(0xFF6A1B9A)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            helperText: 'Şifrenizi tekrar girin',
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Telefon (opsiyonel)
-        TextFormField(
-          controller: _phoneController,
-          decoration: InputDecoration(
-            labelText: 'Telefon (opsiyonel)',
-            prefixIcon: const Icon(Icons.phone, color: Color(0xFF6A1B9A)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 16),
+          // Ad Soyad (opsiyonel)
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Ad Soyad',
+              prefixIcon:
+                  const Icon(Icons.person_outline, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
-          keyboardType: TextInputType.phone,
-        ),
-
-        const SizedBox(height: 32),
-
-        // Kayıt butonu
-        ElevatedButton(
-          onPressed: _isLoading ? null : _register,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 16),
+          // Kullanıcı Adı (opsiyonel)
+          TextFormField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+              labelText: 'Kullanıcı Adı',
+              prefixIcon:
+                  const Icon(Icons.account_circle, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            elevation: 8,
           ),
-          child: _isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
+          const SizedBox(height: 16),
+          // Şifre (zorunlu)
+          TextFormField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Şifre *',
+              prefixIcon:
+                  const Icon(Icons.lock_outline, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            validator: (s) {
+              if (s == null || s.length < 6) return 'En az 6 karakter olmalı';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // Şifre Tekrar (zorunlu)
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Şifre Tekrar *',
+              prefixIcon: const Icon(Icons.lock, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            validator: (s) {
+              if (s != _passwordController.text) return 'Şifreler eşleşmiyor';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // Telefon (opsiyonel)
+          TextFormField(
+            controller: _phoneController,
+            decoration: InputDecoration(
+              labelText: 'Telefon (opsiyonel)',
+              prefixIcon: const Icon(Icons.phone, color: Color(0xFF6A1B9A)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _register,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 8,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Üye Ol',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                )
-              : const Text(
-                  'Üye Ol',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -484,16 +552,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildModeButtons() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildModeButton('Giriş', 'login', Icons.login),
-            _buildModeButton('Yeni Üye', 'register', Icons.person_add),
-            _buildModeButton('Üyeliksiz', 'guest', Icons.person_outline),
-          ],
-        ),
+        _buildModeButton('Giriş', 'login', Icons.login),
+        _buildModeButton('Yeni Üye', 'register', Icons.person_add),
+        _buildModeButton('Üyeliksiz', 'guest', Icons.person_outline),
       ],
     );
   }
@@ -529,37 +593,93 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('🔑 Giriş denemesi başlıyor...');
+      print('📧 Email: ${_usernameController.text.trim()}');
+      print('🔒 Şifre: ${_passwordController.text.trim()}');
+
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _usernameController.text.trim(),
-        password: _passwordController.text,
+        password: _passwordController.text.trim(),
       );
-      final user = response.user;
-      if (user != null) {
-        // Admin mi kontrolü için email'e bakıyoruz
-        if (user.email == 'admin@piyangox.com') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
-          );
+
+      if (response.session != null) {
+        // session kaydını elle yükle
+        await Supabase.instance.client.auth
+            .setSession(response.session!.accessToken);
+
+        // Ardından yönlendirme
+        final role = response.user!.appMetadata['role'];
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admin-tab');
         } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MemberDashboard()),
-          );
+          Navigator.pushReplacementNamed(context, '/user');
         }
-      } else {
-        _showErrorMessage(
-            '❌ Giriş başarısız! Kullanıcı adı veya şifre hatalı.');
+        return;
       }
-    } on AuthException catch (e) {
-      _showErrorMessage('❌ Giriş başarısız! ${e.message}');
+
+      print('📊 Supabase Response:');
+      print('  Session: ${response.session != null ? "✅ Var" : "❌ Yok"}');
+      print('  User: ${response.user != null ? "✅ Var" : "❌ Yok"}');
+      print('  Response toString: ${response.toString()}');
+
+      if (response.session == null) {
+        print("❌ Giriş başarısız");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Giriş başarısız: Session null'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      } else {
+        print("✅ Giriş başarılı: ${response.session!.accessToken}");
+        print('👤 User ID: ${response.user?.id}');
+        print('📧 User Email: ${response.user?.email}');
+        print('🎭 User Role: ${response.user?.appMetadata['role']}');
+        print('📋 AppMetadata: ${response.user?.appMetadata}');
+
+        final role = response.user!.appMetadata['role'];
+        print('🎯 Yönlendirme kararı - Role: $role');
+
+        if (role == 'admin') {
+          print('🚀 Admin panosuna yönlendiriliyor...');
+          Navigator.pushReplacementNamed(context, '/admin-tab');
+        } else {
+          print('🚀 Üye panosuna yönlendiriliyor...');
+          Navigator.pushReplacementNamed(context, '/user');
+        }
+      }
     } catch (e) {
-      _showErrorMessage('❌ Bir hata oluştu: $e');
+      print('🔥 HATA: $e');
+      print('🔥 Hata tipi: ${e.runtimeType}');
+      print('🔥 Hata stack trace: ${StackTrace.current}');
+
+      // Supabase'den gelen hata mesajını yakala
+      String errorMessage = 'Bilinmeyen hata';
+      if (e.toString().contains('Invalid login credentials')) {
+        errorMessage = 'Geçersiz kullanıcı adı veya şifre';
+      } else if (e.toString().contains('Email not confirmed')) {
+        errorMessage = 'E-posta doğrulanmamış';
+      } else if (e.toString().contains('Too many requests')) {
+        errorMessage = 'Çok fazla deneme, lütfen bekleyin';
+      } else if (e.toString().contains('User not found')) {
+        errorMessage = 'Kullanıcı bulunamadı';
+      } else {
+        errorMessage = e.toString();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Giriş hatası: $errorMessage'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -568,54 +688,37 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _register() async {
-    // Zorunlu alanları kontrol et
-    if (_nameController.text.isEmpty ||
-        _usernameController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      _showErrorMessage('❌ Lütfen gerekli alanları doldurun');
-      return;
-    }
-
-    // Şifre uzunluğunu kontrol et
-    if (_passwordController.text.length < 6) {
-      _showErrorMessage('❌ Şifre en az 6 karakter olmalı');
-      return;
-    }
-
-    // Şifre tekrarını kontrol et
-    if (_passwordController.text != _confirmPasswordController.text) {
-      _showErrorMessage('❌ Şifreler eşleşmiyor');
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
     });
-
     try {
-      final success = await _authService.register(
-        name: _nameController.text.trim(),
-        username: _usernameController.text.trim(),
+      final supabase = Supabase.instance.client;
+      final res = await supabase.auth.signUp(
+        email: _emailController.text.trim(),
         password: _passwordController.text,
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
+        data: {
+          'full_name': _nameController.text.trim(),
+          'username': _usernameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+        },
       );
-
-      if (success) {
-        _showSuccessMessage(
-            '✅ Üyelik oluşturuldu! Şimdi giriş yapabilirsiniz.');
-        setState(() {
-          _currentMode = 'login';
-          _usernameController.text = _usernameController.text;
-          _passwordController.text = _passwordController.text;
-          _clearOtherForms();
+      if (res.user != null) {
+        await supabase.from('users').insert({
+          'id': res.user!.id,
+          'email': _emailController.text.trim(),
+          'full_name': _nameController.text.trim(),
+          'username': _usernameController.text.trim(),
+          'phone': _phoneController.text.trim(),
         });
-      } else {
-        _showErrorMessage('❌ Bu kullanıcı adı zaten kullanılıyor!');
       }
+      _showSuccessMessage('Kayıt başarılı! Lütfen e-postanı onayla.');
+      setState(() {
+        _currentMode = 'login';
+        _clearOtherForms();
+      });
     } catch (e) {
-      _showErrorMessage('❌ Kayıt sırasında hata oluştu: $e');
+      _showErrorMessage('Kayıt sırasında hata oluştu: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -638,6 +741,166 @@ class _LoginScreenState extends State<LoginScreen> {
           await _authService.loginAsGuest(_guestNameController.text.trim());
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => AdminDashboard()),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loginWithTestUser() async {
+    if ('test@piyangox.com'.isEmpty || 'test1234'.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Test kullanıcı email ve şifre boş olamaz.')),
+      );
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+    final supabase = Supabase.instance.client;
+    try {
+      await supabase.auth.signOut();
+      final response = await supabase.auth.signInWithPassword(
+        email: 'test@piyangox.com',
+        password: 'test1234',
+      );
+      if (response.session != null && response.user != null) {
+        final role = response.user!.appMetadata['role'];
+        if (role == 'admin') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (ctx) => AdminDashboard()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (ctx) => UserDashboard()),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Test kullanıcı ile giriş başarısız!')),
+        );
+      }
+    } catch (error, stack) {
+      debugPrint('Test kullanıcı login hata: $error\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Giriş hatası: $error')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _createTestUserAndLogin() async {
+    final supabase = Supabase.instance.client;
+    try {
+      final signUpResult = await supabase.auth.signUp(
+        email: 'test@piyangox.com',
+        password: 'test1234',
+        data: {'role': 'admin'},
+      );
+      print('✅ Kullanıcı oluşturuldu: ${signUpResult.user?.email}');
+      if (signUpResult.user != null) {
+        await supabase.auth.signInWithPassword(
+          email: 'test@piyangox.com',
+          password: 'test1234',
+        );
+        print('✅ Oturum açıldı.');
+      }
+    } catch (e) {
+      if (e.toString().contains('User already registered')) {
+        print('⚠️ Zaten kayıtlı, giriş yapılıyor...');
+        await supabase.auth.signInWithPassword(
+          email: 'test@piyangox.com',
+          password: 'test1234',
+        );
+      } else {
+        print('❌ Hata: $e');
+      }
+    }
+  }
+
+  Future<void> _loginWithUsername() async {
+    if (_usernameController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kullanıcı adı ve şifre zorunlu')),
+      );
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+    });
+    final supabase = Supabase.instance.client;
+    await supabase.auth.signOut();
+    try {
+      // 1) users tablosundan email sorgula
+      final userRes = await supabase
+          .from('users')
+          .select('email')
+          .eq('username', _usernameController.text.trim())
+          .maybeSingle();
+      if (userRes == null || userRes['email'] == null) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Böyle bir kullanıcı bulunamadı')),
+        );
+        return;
+      }
+      final email = userRes['email'] as String;
+      // 2) şimdi email ile giriş yap
+      final response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: _passwordController.text,
+      );
+      if (response.session != null && response.user != null) {
+        await supabase.auth.setSession(response.session!.accessToken);
+        final role = response.user!.appMetadata['role'];
+        if (role == 'admin') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (ctx) => AdminDashboard()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (ctx) => UserDashboard()),
+          );
+        }
+        return;
+      }
+      if (response.session == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Giriş başarısız: Session null'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    } catch (error, stack) {
+      debugPrint('Kullanıcı adı ile login hata: $error\n$stack');
+      String errorMessage = 'Bilinmeyen hata';
+      if (error.toString().contains('Invalid login credentials')) {
+        errorMessage = 'Geçersiz kullanıcı adı veya şifre';
+      } else if (error.toString().contains('Email not confirmed')) {
+        errorMessage = 'E-posta doğrulanmamış';
+      } else if (error.toString().contains('Too many requests')) {
+        errorMessage = 'Çok fazla deneme, lütfen bekleyin';
+      } else if (error.toString().contains('User not found')) {
+        errorMessage = 'Kullanıcı bulunamadı';
+      } else {
+        errorMessage = error.toString();
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Giriş hatası: $errorMessage'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     } finally {
       setState(() {
@@ -670,6 +933,70 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  Future<void> _loginAsAdmin() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final supabase = Supabase.instance.client;
+    try {
+      await supabase.auth.signOut();
+      final response = await supabase.auth.signInWithPassword(
+        email: 'admin@piyangox.com',
+        password: '123456',
+      );
+      if (response.session != null && response.user != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (ctx) => AdminDashboard()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Admin ile giriş başarısız!')),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('Admin ile giriş hata: $e\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Giriş hatası: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loginAsUye() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final supabase = Supabase.instance.client;
+    try {
+      await supabase.auth.signOut();
+      final response = await supabase.auth.signInWithPassword(
+        email: 'uye@piyangox.com',
+        password: '123456',
+      );
+      if (response.session != null && response.user != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (ctx) => UserDashboard()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Üye ile giriş başarısız!')),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('Üye ile giriş hata: $e\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Giriş hatası: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override

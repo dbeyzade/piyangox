@@ -178,8 +178,10 @@ class Ticket {
   factory Ticket.fromMap(Map<String, dynamic> map) {
     return Ticket(
       id: map['id'],
-      campaignId: map['campaignId'],
-      numbers: List<String>.from(map['numbers']),
+      campaignId: map['campaignId'] ?? '',
+      numbers: map['numbers'] != null
+          ? List<String>.from(map['numbers'])
+          : <String>[],
       price: map['price']?.toDouble() ?? 0.0,
       status: TicketStatus.values.firstWhere(
         (e) => e.toString() == map['status'],
@@ -187,17 +189,15 @@ class Ticket {
       ),
       buyerName: map['buyerName'],
       buyerPhone: map['buyerPhone'],
-      soldAt: map['soldAt'] != null ? DateTime.parse(map['soldAt']) : null,
-      paidAt: map['paidAt'] != null ? DateTime.parse(map['paidAt']) : null,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
+      soldAt: map['soldAt'] != null ? DateTime.tryParse(map['soldAt']) : null,
+      paidAt: map['paidAt'] != null ? DateTime.tryParse(map['paidAt']) : null,
+      createdAt: DateTime.tryParse(map['createdAt']) ?? DateTime.now(),
       userId: map['user_id'],
       isWinner: map['isWinner'] ?? false,
       winnerType: map['winnerType'],
       winAmount: map['winAmount']?.toDouble(),
       drawDate:
-          map['drawDate'] != null ? DateTime.parse(map['drawDate']) : null,
+          map['drawDate'] != null ? DateTime.tryParse(map['drawDate']) : null,
       autoCancel: map['autoCancel'] ?? true,
     );
   }

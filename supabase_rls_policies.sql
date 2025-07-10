@@ -7,7 +7,7 @@ ON tickets
 FOR INSERT
 USING (user_id = auth.uid());
 
--- Sadece kendi user_id'siyle okuma (SELECT)
+-- Kullanıcıya sadece kendi biletlerini göster
 CREATE POLICY "Allow select for authenticated users"
 ON tickets
 FOR SELECT
@@ -23,4 +23,10 @@ USING (user_id = auth.uid());
 CREATE POLICY "Allow delete for authenticated users"
 ON tickets
 FOR DELETE
-USING (user_id = auth.uid()); 
+USING (user_id = auth.uid());
+
+-- Admin'e tüm biletleri göster (ADMIN_UUID'yi kendi admin UUID'inle değiştir)
+CREATE POLICY "Allow select for admin"
+ON tickets
+FOR SELECT
+USING (auth.uid() = 'ADMIN_UUID'); 

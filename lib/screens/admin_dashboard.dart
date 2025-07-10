@@ -14,6 +14,7 @@ import '../services/complaint_service.dart';
 import '../services/milli_piyango_service.dart';
 import '../services/supabase_service.dart';
 import 'login_screen.dart';
+import 'package:piyangox/main.dart'; // themeNotifier erişimi için
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -441,6 +442,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         Divider(color: Colors.white30),
 
+        // Tema geçişi
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: SwitchListTile(
+            title:
+                const Text('Koyu Tema', style: TextStyle(color: Colors.white)),
+            secondary: Icon(Icons.dark_mode, color: Colors.white),
+            value: themeNotifier.value == ThemeMode.dark,
+            onChanged: (dark) {
+              themeNotifier.value = dark ? ThemeMode.dark : ThemeMode.light;
+            },
+          ),
+        ),
+
         // Menü öğeleri - Gelişmiş animasyonlu butonlar
         Expanded(
           child: ListView.builder(
@@ -688,37 +703,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.grey[200],
-                          child: user.profileImage != null
-                              ? Stack(
-                                  children: [
-                                    Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.green,
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        padding: EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.check,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Icon(
+                          backgroundImage: user.profileImage != null
+                              ? NetworkImage(user.profileImage!)
+                              : null,
+                          child: user.profileImage == null
+                              ? Icon(
                                   Icons.person,
                                   size: 60,
                                   color: Colors.grey[400],
-                                ),
+                                )
+                              : null,
                         ),
                         Positioned(
                           bottom: 0,
@@ -730,7 +724,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             child: IconButton(
                               icon: Icon(Icons.camera_alt, color: Colors.white),
-                              onPressed: _showProfileImageOptions,
+                              onPressed: _pickAndUploadProfileImage,
                             ),
                           ),
                         ),
@@ -2312,7 +2306,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               SizedBox(width: 16),
 
               ElevatedButton.icon(
-                onPressed: _generateSampleTickets,
+                onPressed: _fetchAllTicketsFromSupabase,
                 icon: Icon(Icons.add),
                 label: Text(_ticketsGenerated
                     ? 'Biletler Listelendi ✓'
@@ -5087,89 +5081,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   // Şifre değiştirme
-  void _showChangePasswordDialog() {
-    final oldPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
-    showDialog(
+  Future<void> _showChangePasswordDialog() async {
+    final _formKey = GlobalKey<FormState>();
+    final newPass = TextEditingController();
+    final newPass2 = TextEditingController();
+    final oldPass = TextEditingController();
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('🔒 Şifre Değiştir'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: oldPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Mevcut Şifre',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Şifre Değiştir'),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: oldPass,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Mevcut Şifre'),
+                validator: (s) =>
+                    (s == null || s.isEmpty) ? 'Mevcut şifre gerekli' : null,
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: newPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Yeni Şifre',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+              TextFormField(
+                controller: newPass,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Yeni Şifre'),
+                validator: (s) =>
+                    (s == null || s.length < 6) ? 'En az 6 karakter' : null,
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Yeni Şifre (Tekrar)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+              TextFormField(
+                controller: newPass2,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Yeni Şifre Tekrar'),
+                validator: (s) =>
+                    (s != newPass.text) ? 'Şifreler eşleşmiyor' : null,
               ),
-              obscureText: true,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('İptal'),
-          ),
+              onPressed: () => Navigator.pop(ctx), child: const Text('İptal')),
           ElevatedButton(
             onPressed: () async {
-              if (newPasswordController.text !=
-                  confirmPasswordController.text) {
+              if (!_formKey.currentState!.validate()) return;
+              final ok =
+                  await _authService.changePassword(oldPass.text, newPass.text);
+              Navigator.pop(ctx);
+              if (!ok) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('❌ Yeni şifreler eşleşmiyor')),
-                );
-                return;
-              }
-
-              if (newPasswordController.text.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('❌ Şifre en az 6 karakter olmalı')),
-                );
-                return;
-              }
-
-              final success = await _authService.changePassword(
-                oldPasswordController.text,
-                newPasswordController.text,
-              );
-
-              Navigator.pop(context);
-
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ Şifre başarıyla değiştirildi')),
+                  SnackBar(content: Text('Hata: Şifre güncellenemedi!')),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('❌ Mevcut şifre hatalı')),
+                  const SnackBar(content: Text('Şifre başarıyla güncellendi')),
                 );
               }
             },
-            child: Text('Değiştir'),
+            child: const Text('Kaydet'),
           ),
         ],
       ),
@@ -7185,9 +7155,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // Supabase'den tüm biletleri çek ve admin ekranında göster
+  Future<void> _fetchAllTicketsFromSupabase() async {
+    final tickets = await _supabaseService.getAllTickets();
+    setState(() {
+      _sampleTickets = tickets;
+      _ticketsGenerated = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ ${tickets.length} bilet Supabase\'den çekildi!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Profil fotoğrafı seç ve yükle
+  Future<void> _pickAndUploadProfileImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+    final fileName =
+        '${_authService.currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}.png';
+    // Supabase storage'a yükle (avatars bucket'ı public olmalı)
+    final res = await _supabaseService.uploadFileToBucket(
+      bucket: 'avatars',
+      filePath: file.path,
+      fileName: fileName,
+    );
+    if (res == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Yükleme hatası!')),
+      );
+      return;
+    }
+    // Kullanıcı profilini güncelle
+    await _authService.updateProfile(profileImage: res);
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Profil fotoğrafı güncellendi!')),
+    );
   }
 }

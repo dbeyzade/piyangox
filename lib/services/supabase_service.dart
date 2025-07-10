@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:piyangox/models/campaign.dart';
 import 'package:piyangox/models/ticket.dart';
 import 'dart:async';
+import 'dart:io';
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
@@ -128,7 +129,7 @@ class SupabaseService {
 
   // Kampanya ekleme
   Future<bool> addCampaign(Campaign campaign) async {
-    try {
+    return await safeApiCall(() async {
       await _client.from('campaigns').insert(campaign.toJson());
       print('✅ Kampanya Supabase\'e eklendi: ${campaign.name}');
 
@@ -139,15 +140,13 @@ class SupabaseService {
       });
 
       return true;
-    } catch (e) {
-      print('❌ Supabase kampanya ekleme hatası: $e');
-      return false;
-    }
+        }) ??
+        false;
   }
 
   // Kampanya güncelleme
   Future<bool> updateCampaign(Campaign campaign) async {
-    try {
+    return await safeApiCall(() async {
       await _client
           .from('campaigns')
           .update(campaign.toJson())
@@ -161,15 +160,13 @@ class SupabaseService {
       });
 
       return true;
-    } catch (e) {
-      print('❌ Supabase kampanya güncelleme hatası: $e');
-      return false;
-    }
+        }) ??
+        false;
   }
 
   // Kampanya silme
   Future<bool> deleteCampaign(String campaignId) async {
-    try {
+    return await safeApiCall(() async {
       await _client.from('campaigns').delete().eq('id', campaignId);
       await _client.from('tickets').delete().eq('campaign_id', campaignId);
       print('✅ Kampanya Supabase\'den silindi: $campaignId');
@@ -181,17 +178,15 @@ class SupabaseService {
       });
 
       return true;
-    } catch (e) {
-      print('❌ Supabase kampanya silme hatası: $e');
-      return false;
-    }
+        }) ??
+        false;
   }
 
   // 🎫 BİLET İŞLEMLERİ (Realtime özellikli)
 
   // Bilet ekleme
   Future<bool> addTicket(Ticket ticket) async {
-    try {
+    return await safeApiCall(() async {
       await _client.from('tickets').insert(ticket.toJson());
       print('✅ Bilet Supabase\'e eklendi: ${ticket.number}');
 
@@ -202,15 +197,13 @@ class SupabaseService {
       });
 
       return true;
-    } catch (e) {
-      print('❌ Supabase bilet ekleme hatası: $e');
-      return false;
-    }
+        }) ??
+        false;
   }
 
   // Bilet güncelleme
   Future<bool> updateTicket(Ticket ticket) async {
-    try {
+    return await safeApiCall(() async {
       await _client.from('tickets').update(ticket.toJson()).eq('id', ticket.id);
       print('✅ Bilet Supabase\'de güncellendi: ${ticket.number}');
 
@@ -221,10 +214,8 @@ class SupabaseService {
       });
 
       return true;
-    } catch (e) {
-      print('❌ Supabase bilet güncelleme hatası: $e');
-      return false;
-    }
+        }) ??
+        false;
   }
 
   // 📱 ADMIN İŞLEMİ BROADCAST
@@ -280,44 +271,92 @@ class SupabaseService {
 
   // Tüm kampanyaları getir
   Future<List<Campaign>> getCampaigns() async {
-    try {
+    return await safeApiCall(() async {
       final response = await _client.from('campaigns').select();
       final campaigns =
           (response as List).map((json) => Campaign.fromJson(json)).toList();
       print('✅ ${campaigns.length} kampanya Supabase\'den alındı');
       return campaigns;
-    } catch (e) {
-      print('❌ Supabase kampanya getirme hatası: $e');
-      return [];
-    }
+        }) ??
+        [];
   }
 
   // Kampanya biletlerini getir
   Future<List<Ticket>> getCampaignTickets(String campaignId) async {
-    try {
+    return await safeApiCall(() async {
       final response =
           await _client.from('tickets').select().eq('campaign_id', campaignId);
       final tickets =
           (response as List).map((json) => Ticket.fromJson(json)).toList();
       print('✅ ${tickets.length} bilet Supabase\'den alındı');
       return tickets;
-    } catch (e) {
-      print('❌ Supabase bilet getirme hatası: $e');
-      return [];
-    }
+        }) ??
+        [];
   }
 
   // Tüm biletleri getir
   Future<List<Ticket>> getAllTickets() async {
-    try {
+    return await safeApiCall(() async {
       final response = await _client.from('tickets').select();
       final tickets =
           (response as List).map((json) => Ticket.fromJson(json)).toList();
       print('✅ ${tickets.length} bilet Supabase\'den alındı');
       return tickets;
+        }) ??
+        [];
+  }
+
+  // Sadece giriş yapan kullanıcıya ait biletleri getir
+  Future<List<Ticket>> getUserTickets() async {
+    final result = await safeApiCall(() async {
+      final userId = getCurrentUserId();
+      if (userId == null) return <Ticket>[];
+      final response = await _client
+          .from('tickets')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      final tickets =
+          (response as List).map((json) => Ticket.fromJson(json)).toList();
+      print("✅ ${tickets.length} bilet (kullanıcıya ait) Supabase'den alındı");
+      return tickets;
+    });
+    return result ?? <Ticket>[];
+  }
+
+  // Kampanya ile biletleri birleştirerek getir
+  Future<List<dynamic>> getTicketsWithCampaign() async {
+    return await safeApiCall(() async {
+          final response = await _client
+              .from('tickets')
+              .select('*, campaigns(name, prize_amount, prize_currency)')
+              .order('created_at', ascending: false);
+          print("✅ Kampanya ile biletler Supabase'den alındı");
+          return response as List<dynamic>;
+        }) ??
+        [];
+  }
+
+  // Profil fotoğrafı veya dosya yükleme
+  Future<String?> uploadFileToBucket({
+    required String bucket,
+    required String filePath,
+    required String fileName,
+  }) async {
+    try {
+      final file = File(filePath);
+      final storage = _client.storage.from(bucket);
+      final res = await storage.upload(fileName, file);
+      // Eğer hata varsa null döndür (res string ise hata yoktur)
+      if (res == null) {
+        print('❌ Dosya yükleme hatası: null response');
+        return null;
+      }
+      final publicUrl = storage.getPublicUrl(fileName);
+      return publicUrl;
     } catch (e) {
-      print('❌ Supabase tüm bilet getirme hatası: $e');
-      return [];
+      print('❌ uploadFileToBucket hata: $e');
+      return null;
     }
   }
 
@@ -331,6 +370,115 @@ class SupabaseService {
       print('❌ Supabase bağlantı hatası: $e');
       return false;
     }
+  }
+
+  // 🔄 TOKEN YENİLEME SİSTEMİ
+
+  // Token'ın süresi dolmuş mu kontrol et
+  bool isTokenExpired() {
+    final session = _client.auth.currentSession;
+    if (session == null) return true;
+
+    final expiresAt = session.expiresAt;
+    if (expiresAt == null) return true;
+
+    // expiresAt int timestamp, DateTime'a çevir
+    final expiresDateTime = DateTime.fromMillisecondsSinceEpoch(expiresAt);
+
+    // 5 dakika öncesinden token'ı yenilemeye başla
+    final now = DateTime.now();
+    final refreshThreshold =
+        expiresDateTime.subtract(const Duration(minutes: 5));
+
+    return now.isAfter(refreshThreshold);
+  }
+
+  // Token'ı yenile
+  Future<bool> refreshToken() async {
+    try {
+      print('🔄 Token yenileniyor...');
+      final response = await _client.auth.refreshSession();
+
+      if (response.session != null) {
+        print('✅ Token başarıyla yenilendi');
+        print('  Yeni expires at: ${response.session!.expiresAt}');
+        return true;
+      } else {
+        print('❌ Token yenileme başarısız');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Token yenileme hatası: $e');
+      return false;
+    }
+  }
+
+  // Otomatik token yenileme
+  Future<bool> autoRefreshToken() async {
+    if (isTokenExpired()) {
+      print('⚠️ Token süresi dolmuş, yenileniyor...');
+      return await refreshToken();
+    }
+    return true;
+  }
+
+  // API çağrısı öncesi token kontrolü
+  Future<bool> ensureValidToken() async {
+    try {
+      // Token geçerli mi kontrol et
+      if (isTokenExpired()) {
+        print('🔄 Token geçersiz, yenileniyor...');
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          print('❌ Token yenilenemedi, kullanıcı yeniden giriş yapmalı');
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      print('❌ Token kontrol hatası: $e');
+      return false;
+    }
+  }
+
+  // Güvenli API çağrısı wrapper'ı
+  Future<T?> safeApiCall<T>(Future<T> Function() apiCall) async {
+    try {
+      // Token kontrolü
+      if (!await ensureValidToken()) {
+        throw Exception('Token geçersiz ve yenilenemedi');
+      }
+
+      // API çağrısını yap
+      return await apiCall();
+    } catch (e) {
+      print('❌ Güvenli API çağrısı hatası: $e');
+      rethrow;
+    }
+  }
+
+  // Periyodik token yenileme başlat
+  void startTokenRefreshTimer() {
+    // Her 30 dakikada bir token kontrolü
+    Timer.periodic(const Duration(minutes: 30), (timer) async {
+      if (isTokenExpired()) {
+        print('🔄 Periyodik token yenileme...');
+        await refreshToken();
+      }
+    });
+    print('✅ Periyodik token yenileme başlatıldı');
+  }
+
+  // Session durumunu kontrol et
+  bool hasValidSession() {
+    final session = _client.auth.currentSession;
+    return session != null && !isTokenExpired();
+  }
+
+  // Kullanıcı ID'sini güvenli şekilde al
+  String? getCurrentUserId() {
+    if (!hasValidSession()) return null;
+    return _client.auth.currentUser?.id;
   }
 
   // 🗑️ KAYNAKLARI TEMİZLE

@@ -1,7 +1,29 @@
 {
-    "task.saveBeforeRun": "prompt",
-    "notebook.consolidatedRunButton": true,
-    "gradle.allowParallelRun": true,
-    "npm.enableRunFromFolder": true,
-    "dart.flutterGenerateLocalizationsOnSave": "all"
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "dart.flutterGenerateLocalizationsOnSave": "all",
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
+  "gradle.allowParallelRun": true,
+  "notebook.consolidatedRunButton": true,
+  "npm.enableRunFromFolder": true,
+  "task.saveBeforeRun": "prompt"
 }

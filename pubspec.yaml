@@ -47,6 +47,7 @@ dependencies:
   intl: ^0.20.2  # Tarih formatı
   crypto: ^3.0.3  # Şifreleme
   uuid: ^4.1.0   # Unique ID üretimi
+  share_plus: ^7.2.1  # Sosyal medya paylaşımı
   
   # 🔥 MEVCUT BAĞIMLILIKLAR - Korundu
   contacts_service: ^0.6.3

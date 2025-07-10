@@ -1,95 +1,79 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:piyangox/screens/login_screen.dart';
-import 'dart:io';
 
+// Auth sayfaları
+import 'screens/login_screen.dart';
+import 'screens/auth/register_page.dart';
+import 'screens/auth/forgot_password_page.dart';
+
+// Dashboard sayfaları
+import 'screens/dashboard/admin_dashboard.dart';
+import 'screens/dashboard/user_dashboard.dart';
+import 'screens/dashboard/admin_dashboard_tab.dart';
+import 'screens/dashboard/draw_result_page.dart';
+import 'screens/bayi_dashboard.dart';
+import 'services/supabase_service.dart';
+
+final themeNotifier = ValueNotifier(ThemeMode.light);
+
+// Giriş Noktası
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Desktop için window manager kurulumu
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    try {
-      await windowManager.ensureInitialized();
-
-      const windowOptions = WindowOptions(
+    await windowManager.ensureInitialized();
+    await windowManager.waitUntilReadyToShow(
+      const WindowOptions(
         size: Size(1400, 900),
         minimumSize: Size(1200, 800),
         center: true,
         backgroundColor: Colors.transparent,
-        skipTaskbar: false,
         titleBarStyle: TitleBarStyle.normal,
         title: 'PiyangoX - Piyango Yönetim Sistemi (Desktop)',
-      );
-
-      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      ),
+      () async {
         await windowManager.show();
         await windowManager.focus();
-      });
-
-      print('🖥️  Masaüstü modu aktif - ${Platform.operatingSystem}');
-    } catch (e) {
-      print('⚠️  Window manager hatası: $e');
-    }
-  }
-
-  // Supabase başlatma
-  try {
-    await Supabase.initialize(
-      url: 'https://botfwqkpqtcwsoghzdad.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvdGZ3cWtwcXRjd3NvZ2h6ZGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEwMzU5NDcsImV4cCI6MjA2NjYxMTk0N30.0r7XulXxuuFGaCpgBSpzujC_37t16S1NJZR8-vEW4y4',
+      },
     );
-    print('✅ Supabase başlatıldı');
-  } catch (e) {
-    print('❌ Supabase hatası: $e');
   }
 
-  runApp(const MyApp());
+  await Supabase.initialize(
+    url: 'https://itlhxotugmnjgvaxdnay.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bGh4b3R1Z21uamd2YXhkbmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5OTA3NzIsImV4cCI6MjA2NzU2Njc3Mn0.WSzZ6JbAj1_q1_CEpIy31LQWPD81Ww-O3vt5rf-1xRg',
+  );
+
+  // Session kontrolü
+  final currentSession = Supabase.instance.client.auth.currentSession;
+  print(
+      '🔄 Uygulama başlangıcında session: ${currentSession != null ? "Var" : "Yok"}');
+
+  // Token yenileme sistemini başlat
+  final supabaseService = SupabaseService();
+  supabaseService.startTokenRefreshTimer();
+
+  runApp(
+    ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, mode, __) => MyApp(themeMode: mode),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  final ThemeMode themeMode;
+  const MyApp({super.key, this.themeMode = ThemeMode.light});
   @override
   Widget build(BuildContext context) {
-    final isDesktop =
-        Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-
     return MaterialApp(
       title: 'PiyangoX - Piyango Yönetim Sistemi',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: isDesktop
-            ? VisualDensity.standard // Desktop için daha geniş spacing
-            : VisualDensity.adaptivePlatformDensity,
-
-        // Desktop için daha büyük font boyutları
-        textTheme: isDesktop
-            ? const TextTheme(
-                displayLarge: TextStyle(fontSize: 28),
-                displayMedium: TextStyle(fontSize: 24),
-                displaySmall: TextStyle(fontSize: 20),
-                headlineLarge: TextStyle(fontSize: 18),
-                headlineMedium: TextStyle(fontSize: 16),
-                titleLarge: TextStyle(fontSize: 16),
-                bodyLarge: TextStyle(fontSize: 14),
-                bodyMedium: TextStyle(fontSize: 13),
-              )
-            : null,
-
-        // Desktop için daha büyük butonlar
-        elevatedButtonTheme: isDesktop
-            ? ElevatedButtonThemeData(
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  minimumSize: const Size(120, 48),
-                ),
-              )
-            : null,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
+      darkTheme: ThemeData.dark(),
+      themeMode: themeMode,
       locale: const Locale('tr', 'TR'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -100,18 +84,94 @@ class MyApp extends StatelessWidget {
         Locale('tr', 'TR'),
         Locale('en', 'US'),
       ],
-      home: isDesktop
-          ? const DesktopWrapper(child: LoginScreen())
-          : const LoginScreen(),
+      initialRoute: '/login',
+      routes: {
+        '/login': (context) => LoginScreen(),
+        '/user': (context) => UserDashboard(),
+        '/admin-tab': (context) => AdminDashboard(),
+        '/admin': (context) => AdminDashboard(),
+        '/draw': (context) => DrawResultPage(),
+      },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => Scaffold(
+          body: Center(
+              child: Text(
+                  'Sayfa bulunamadı')), // NotFoundPage yoksa basit bir ekran
+        ),
+      ),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// Desktop wrapper widget
+class EntryPoint extends StatefulWidget {
+  const EntryPoint({super.key});
+
+  @override
+  State<EntryPoint> createState() => _EntryPointState();
+}
+
+class _EntryPointState extends State<EntryPoint> {
+  @override
+  void initState() {
+    super.initState();
+    // Auth state değişikliklerini dinle
+    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      print('🔄 Auth state değişti: ${event.event}');
+      print('  Session: ${event.session != null ? "Var" : "Yok"}');
+      print('  User: ${event.session?.user?.email}');
+      print('  Role: ${event.session?.user?.appMetadata['role']}');
+
+      // Login sonrası yönlendirme
+      if (event.event == AuthChangeEvent.signedIn && event.session != null) {
+        final role = event.session!.user.appMetadata['role'] ?? 'member';
+        print('🎯 Login sonrası yönlendirme - Role: $role');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (role == 'admin') {
+            Navigator.of(context).pushReplacementNamed('/admin');
+          } else if (role == 'bayi') {
+            Navigator.of(context).pushReplacementNamed('/bayi');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/user');
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
+
+    print('🔍 EntryPoint - Session kontrolü:');
+    print('  Session: ${session != null ? "Var" : "Yok"}');
+    print('  User: ${session?.user?.email}');
+    print('  AppMetadata: ${session?.user?.appMetadata}');
+
+    if (session == null) {
+      print('❌ Session yok - LoginScreen\'e yönlendiriliyor');
+      return const LoginScreen(); // 👉 Giriş formu burası
+    }
+
+    final role = session.user?.appMetadata['role'] ?? 'member';
+    print('🎭 Role: $role');
+
+    if (role == 'admin') {
+      print('✅ Admin panosuna yönlendiriliyor');
+      return AdminDashboard();
+    } else if (role == 'bayi') {
+      print('✅ Bayi panosuna yönlendiriliyor');
+      return BayiDashboard();
+    } else {
+      print('✅ Üye panosuna yönlendiriliyor');
+      return UserDashboard();
+    }
+  }
+}
+
 class DesktopWrapper extends StatefulWidget {
   final Widget child;
-
   const DesktopWrapper({super.key, required this.child});
 
   @override
@@ -122,18 +182,13 @@ class _DesktopWrapperState extends State<DesktopWrapper> with WindowListener {
   @override
   void initState() {
     super.initState();
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      windowManager.addListener(this);
-      windowManager
-          .setPreventClose(false); // X butonuyla direkt kapanmasını sağla
-    }
+    windowManager.addListener(this);
+    windowManager.setPreventClose(false);
   }
 
   @override
   void dispose() {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      windowManager.removeListener(this);
-    }
+    windowManager.removeListener(this);
     super.dispose();
   }
 
@@ -141,179 +196,31 @@ class _DesktopWrapperState extends State<DesktopWrapper> with WindowListener {
   void onWindowClose() async {
     final result = await showDialog<String>(
       context: context,
-      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.exit_to_app, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Uygulamayı Kapat'),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('PiyangoX uygulamasını nasıl kapatmak istiyorsunuz?'),
-            SizedBox(height: 16),
-            Text(
-              '💡 İpucu: Arka plana gönderirsaniz sistem tepsisinden tekrar açabilirsiniz.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
+        title: const Text('Kapat?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop('cancel'),
+            onPressed: () => Navigator.pop(context, 'cancel'),
             child: const Text('İptal'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            onPressed: () => Navigator.of(context).pop('minimize'),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.minimize, size: 16),
-                SizedBox(width: 4),
-                Text('Arka Plana'),
-              ],
-            ),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop('close'),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.close, size: 16),
-                SizedBox(width: 4),
-                Text('Kapat'),
-              ],
-            ),
+            onPressed: () => Navigator.pop(context, 'close'),
+            child: const Text('Kapat'),
           ),
         ],
       ),
     );
 
-    switch (result) {
-      case 'minimize':
-        await windowManager.hide();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ PiyangoX arka planda çalışmaya devam ediyor'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-        break;
-      case 'close':
-        await windowManager.destroy();
-        exit(0); // Uygulamayı tamamen sonlandır
-      case 'cancel':
-      default:
-        // Do nothing, keep the window open
-        break;
+    if (result == 'close') {
+      await windowManager.destroy();
+      exit(0);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Desktop üst bar
-          Container(
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 16),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.casino,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PiyangoX Desktop',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Milli Piyango Yönetim Sistemi',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                // Desktop bilgisi
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.desktop_windows,
-                          color: Colors.white, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        Platform.operatingSystem.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
-            ),
-          ),
-
-          // Ana içerik
-          Expanded(
-            child: widget.child,
-          ),
-        ],
-      ),
+      body: widget.child,
     );
   }
 }
