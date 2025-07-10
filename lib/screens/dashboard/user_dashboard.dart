@@ -60,7 +60,7 @@ class _UserDashboardState extends State<UserDashboard> {
     try {
       await supabase.from('tickets').update({
         'status': 'satildi',
-        'owner_id': userId,
+        'user_id': userId,
         'published': false,
       }).eq('id', ticketId);
 

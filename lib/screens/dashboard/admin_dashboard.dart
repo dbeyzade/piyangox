@@ -654,7 +654,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               return Card(
                 child: ListTile(
                   title: Text('Bilet No: ${bilet['number']}'),
-                  subtitle: Text('Sahip: ${bilet['owner_id'] ?? 'Bilinmiyor'}'),
+                  subtitle: Text('Sahip: ${bilet['user_id'] ?? 'Bilinmiyor'}'),
                   trailing: Text('Durum: ${bilet['status']}'),
                 ),
               );

@@ -82,7 +82,7 @@ class _DrawResultPageState extends State<DrawResultPage> {
                       child: ListTile(
                         title: Text('Kazanan Bilet No: ${ticket['number']}'),
                         subtitle: Text(
-                            'Kullanıcı: ${ticket['owner_id'] ?? 'Tanımsız'}'),
+                            'Kullanıcı: ${ticket['user_id'] ?? 'Tanımsız'}'),
                       ),
                     );
                   },
