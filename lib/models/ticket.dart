@@ -159,7 +159,7 @@ class Ticket {
       'id': id,
       'campaignId': campaignId,
       'numbers': numbers,
-      'price': price,
+      'ticket_price': price,
       'status': status.toString(),
       'buyerName': buyerName,
       'buyerPhone': buyerPhone,
@@ -182,7 +182,7 @@ class Ticket {
       numbers: map['numbers'] != null
           ? List<String>.from(map['numbers'])
           : <String>[],
-      price: map['price']?.toDouble() ?? 0.0,
+      price: map['ticket_price']?.toDouble() ?? map['price']?.toDouble() ?? 0.0,
       status: TicketStatus.values.firstWhere(
         (e) => e.toString() == map['status'],
         orElse: () => TicketStatus.available,

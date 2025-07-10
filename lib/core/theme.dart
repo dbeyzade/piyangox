@@ -18,4 +18,22 @@ final ThemeData appTheme = ThemeData.dark().copyWith(
       textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
     ),
   ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: Color(0xFF232323),
+    labelStyle: TextStyle(color: Colors.white),
+    hintStyle: TextStyle(color: Colors.white70),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white24),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    border: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white24),
+      borderRadius: BorderRadius.circular(12),
+    ),
+  ),
 );

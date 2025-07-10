@@ -611,14 +611,113 @@ class _AdminDashboardState extends State<AdminDashboard> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Kampanya kaydetme ve bilet oluşturma işlemleri burada yapılacak
-                  // TODO: DB insert işlemleri
-                  debugPrint(
-                      'Kampanya: isim=${_kampanyaIsimCtrl.text}, ikramiyeBedeli=${_ikramiyeBedeliCtrl.text}, ikramiyeCinsi=${_ikramiyeCinsiCtrl.text}');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Kampanya kaydedildi (demo)!')),
-                  );
+                onPressed: () async {
+                  if (_kampanyaFormKey.currentState!.validate()) {
+                    setState(() => _loading = true);
+
+                    try {
+                      final user = supabase.auth.currentUser!;
+                      final userId = user.id;
+
+                      // 1) Kullanıcıyı users tablosuna ekle
+                      try {
+                        await supabase
+                            .from('users')
+                            .insert({'id': user.id, 'email': user.email});
+                      } catch (e) {
+                        // Kullanıcı zaten varsa hata verme
+                        print('Kullanıcı zaten mevcut: $e');
+                      }
+
+                      // 2) Kampanya (draw) kaydı
+                      final drawRes = await supabase
+                          .from('draws')
+                          .insert({
+                            'name': _kampanyaIsimCtrl.text.trim(),
+                            'last_number_count': _sonNumaraAdeti,
+                            'chance_count': _sansAdeti,
+                            'min_number': _birNumaraAlti,
+                            'max_number': _birNumaraUstu,
+                            'draw_date': _cekilisTarihiCtrl.text,
+                            'ticket_price':
+                                double.tryParse(_biletFiyatiCtrl.text) ?? 0.0,
+                            'ticket_count':
+                                int.tryParse(_biletAdetiCtrl.text) ?? 0,
+                            'prize_amount':
+                                double.tryParse(_ikramiyeBedeliCtrl.text) ??
+                                    0.0,
+                            'prize_unit': _ikramiyeCinsiCtrl.text,
+                            'user_id': userId,
+                          })
+                          .select()
+                          .single();
+
+                      // 2) Biletleri oluştur
+                      final draw = drawRes;
+                      final count = draw['ticket_count'] as int;
+                      final minNum = _birNumaraAlti;
+
+                      if (count <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Bilet adeti 0\'dan büyük olmalı!'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        setState(() => _loading = false);
+                        return;
+                      }
+
+                      final tickets = List.generate(count, (i) {
+                        final numStr = (minNum + i).toString().padLeft(3, '0');
+                        return {
+                          'draw_id': draw['id'],
+                          'user_id': userId,
+                          'number': numStr,
+                          'status': 'available',
+                          'ticket_price':
+                              double.tryParse(_biletFiyatiCtrl.text) ?? 0.0,
+                          'created_at': DateTime.now().toIso8601String(),
+                        };
+                      });
+
+                      final ticketRes =
+                          await supabase.from('tickets').insert(tickets);
+
+                      // 3) Başarı
+                      print('✅ Başarıyla eklendi: ${tickets.length} bilet');
+
+                      // Formu temizle
+                      _kampanyaFormKey.currentState!.reset();
+                      _kampanyaIsimCtrl.clear();
+                      _cekilisTarihiCtrl.clear();
+                      _biletFiyatiCtrl.clear();
+                      _biletAdetiCtrl.clear();
+                      _ikramiyeBedeliCtrl.clear();
+                      _ikramiyeCinsiCtrl.clear();
+
+                      // İstatistikleri yenile
+                      await _loadStats();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Kampanya ve biletler başarıyla oluşturuldu! ${tickets.length} bilet eklendi.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      print('Kampanya oluşturma hatası: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Hata: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } finally {
+                      setState(() => _loading = false);
+                    }
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -669,25 +768,187 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tüm Biletler',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        SizedBox(height: 16),
-        Expanded(
-          child: ListView.builder(
-            itemCount: tickets.length,
-            itemBuilder: (context, index) {
-              final bilet = tickets[index];
-              return Card(
-                child: ListTile(
-                  title: Text('Bilet No: ${bilet['number']}'),
-                  subtitle: Text('Durum: ${bilet['status']}'),
-                ),
-              );
-            },
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Tüm Biletler',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            ElevatedButton.icon(
+              onPressed: () async {
+                setState(() => _loading = true);
+                await _loadStats();
+                setState(() => _loading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Biletler yenilendi!')),
+                );
+              },
+              icon: Icon(Icons.refresh),
+              label: Text('Yenile'),
+            ),
+          ],
         ),
+        SizedBox(height: 16),
+        if (_loading)
+          Center(child: CircularProgressIndicator())
+        else
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _loadTicketsFromSupabase(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error, size: 64, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text('Hata: ${snapshot.error}'),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => setState(() {}),
+                          child: Text('Tekrar Dene'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final tickets = snapshot.data ?? [];
+
+                if (tickets.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('Henüz bilet yok.'),
+                        SizedBox(height: 8),
+                        Text('Kampanya oluşturarak bilet ekleyebilirsiniz.',
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: tickets.length,
+                  itemBuilder: (context, index) {
+                    final ticket = tickets[index];
+                    final status = ticket['status'] ?? 'bilinmiyor';
+                    final createdAt = ticket['created_at'] ?? '';
+
+                    // Durum rengi
+                    Color statusColor;
+                    switch (status) {
+                      case 'musaid':
+                        statusColor = Colors.blue;
+                        break;
+                      case 'satildi':
+                        statusColor = Colors.green;
+                        break;
+                      case 'ödenmedi':
+                        statusColor = Colors.red;
+                        break;
+                      case 'iptal':
+                        statusColor = Colors.grey;
+                        break;
+                      default:
+                        statusColor = Colors.orange;
+                    }
+
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: statusColor,
+                          child: Text(
+                            ticket['number'] ?? '?',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        title: Text(
+                          'Bilet #${ticket['number'] ?? 'N/A'}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Durum: $status'),
+                            if (ticket['campaign_id'] != null)
+                              Text('Kampanya ID: ${ticket['campaign_id']}'),
+                            if (ticket['price'] != null)
+                              Text('Fiyat: ${ticket['price']} TL'),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                status.toUpperCase(),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (createdAt.isNotEmpty)
+                              Text(
+                                createdAt.substring(
+                                    0,
+                                    createdAt.length > 19
+                                        ? 19
+                                        : createdAt.length),
+                                style:
+                                    TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
       ],
     );
+  }
+
+  // Supabase'den biletleri yükle
+  Future<List<Map<String, dynamic>>> _loadTicketsFromSupabase() async {
+    try {
+      print('🔄 Biletler Supabase\'den yükleniyor...');
+
+      final response = await supabase
+          .from('tickets')
+          .select(
+              'id, number, status, user_id, campaign_id, price, created_at, published')
+          .order('created_at', ascending: false);
+
+      final tickets = List<Map<String, dynamic>>.from(response);
+      print('✅ ${tickets.length} bilet yüklendi');
+
+      return tickets;
+    } catch (e) {
+      print('❌ Bilet yükleme hatası: $e');
+      rethrow;
+    }
   }
 
   Widget _buildUyeler() {

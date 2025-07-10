@@ -7196,7 +7196,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return;
     }
     // Kullanıcı profilini güncelle
-    await _authService.updateProfile(profileImage: res);
+    await _authService.updateProfile(
+      name: _authService.currentUser?.name ?? 'Admin',
+      profileImage: res,
+    );
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Profil fotoğrafı güncellendi!')),

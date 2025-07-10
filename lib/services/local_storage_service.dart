@@ -107,7 +107,7 @@ class LocalStorageService {
       'buyerPhone': t.buyerPhone,
       'soldAt': t.soldAt?.toIso8601String(),
       'paidAt': t.paidAt?.toIso8601String(),
-      'price': t.price,
+              'ticket_price': t.price,
       'createdAt': t.createdAt.toIso8601String(),
     }).toList();
     
