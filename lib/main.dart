@@ -16,6 +16,7 @@ import 'screens/dashboard/admin_dashboard_tab.dart';
 import 'screens/dashboard/draw_result_page.dart';
 import 'screens/bayi_dashboard.dart';
 import 'services/supabase_service.dart';
+import 'core/theme.dart';
 
 final themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -71,8 +72,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PiyangoX - Piyango Yönetim Sistemi',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      darkTheme: ThemeData.dark(),
+      theme: appLightTheme,
+      darkTheme: appDarkTheme,
       themeMode: themeMode,
       locale: const Locale('tr', 'TR'),
       localizationsDelegates: const [
@@ -224,3 +225,4 @@ class _DesktopWrapperState extends State<DesktopWrapper> with WindowListener {
     );
   }
 }
+print(undefinedVariable)
