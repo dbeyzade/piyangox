@@ -267,29 +267,33 @@ class _TicketDesignWidgetState extends State<TicketDesignWidget>
     Color color;
     
     switch (widget.ticket.status) {
-      case TicketStatus.available:
+      case 'available':
         icon = Icons.confirmation_number;
         color = Colors.grey.shade300;
         break;
-      case TicketStatus.sold:
+      case 'sold':
         icon = Icons.shopping_cart;
         color = Colors.yellow;
         break;
-      case TicketStatus.unpaid:
+      case 'unpaid':
         icon = Icons.access_time;
         color = Colors.orange;
         break;
-      case TicketStatus.paid:
+      case 'paid':
         icon = Icons.check_circle;
         color = Colors.green;
         break;
-      case TicketStatus.cancelled:
+      case 'cancelled':
         icon = Icons.cancel;
         color = Colors.red;
         break;
-      case TicketStatus.winner:
+      case 'winner':
         icon = Icons.emoji_events;
         color = Colors.amber;
+        break;
+      default:
+        icon = Icons.help;
+        color = Colors.grey.shade300;
         break;
     }
     
@@ -348,35 +352,39 @@ class _TicketDesignWidgetState extends State<TicketDesignWidget>
 
   List<Color> _getGradientColors() {
     switch (widget.ticket.status) {
-      case TicketStatus.available:
+      case 'available':
         return [Colors.grey.shade600, Colors.grey.shade800];
-      case TicketStatus.sold:
+      case 'sold':
         return [Colors.orange.shade600, Colors.orange.shade800];
-      case TicketStatus.unpaid:
+      case 'unpaid':
         return [Colors.deepOrange.shade600, Colors.deepOrange.shade800];
-      case TicketStatus.paid:
+      case 'paid':
         return [Colors.green.shade600, Colors.green.shade800];
-      case TicketStatus.cancelled:
+      case 'cancelled':
         return [Colors.red.shade600, Colors.red.shade800];
-      case TicketStatus.winner:
+      case 'winner':
         return [Colors.amber.shade600, Colors.amber.shade800];
+      default:
+        return [Colors.grey.shade600, Colors.grey.shade800];
     }
   }
 
   Color _getNumberColor() {
     switch (widget.ticket.status) {
-      case TicketStatus.available:
+      case 'available':
         return Colors.grey.shade700;
-      case TicketStatus.sold:
+      case 'sold':
         return Colors.orange.shade700;
-      case TicketStatus.unpaid:
+      case 'unpaid':
         return Colors.deepOrange.shade700;
-      case TicketStatus.paid:
+      case 'paid':
         return Colors.green.shade700;
-      case TicketStatus.cancelled:
+      case 'cancelled':
         return Colors.red.shade700;
-      case TicketStatus.winner:
+      case 'winner':
         return Colors.amber.shade700;
+      default:
+        return Colors.grey.shade700;
     }
   }
 }
@@ -434,3 +442,4 @@ class TicketPatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+print(undefinedVariable);
